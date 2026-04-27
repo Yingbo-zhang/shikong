@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>时空问询处</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #fdf7ee;
+  --paper2: #faf2e2;
+  --paper3: #f5ebe0;
+  --border: #dcc890;
+  --border2: rgba(220,200,144,0.5);
+  --red: #b83020;
+  --red-dark: #8a2018;
+  --gold: #b8860a;
+  --purple: #6040a0;
+  --ink: #2a1808;
+  --ink2: #4a3018;
+  --ink3: #7a5830;
+  --muted: #b89a60;
+  --muted2: #c8a870;
+  --bg: #f0e8d8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; background: var(--bg); font-family: 'Noto Sans SC', sans-serif; overflow: hidden; }
+
+/* 纸纹背景 */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23ede3ce'/%3E%3Ccircle cx='1' cy='1' r='.4' fill='%23e0d4b8' opacity='.5'/%3E%3C/svg%3E");
+  opacity: .6;
+}
+
+.app { width: 100%; height: 100%; max-width: 480px; margin: 0 auto; position: relative; overflow: hidden; z-index: 1; }
+
+/* ── SCREENS ── */
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.screen.active { opacity: 1; pointer-events: all; }
+
+/* ══════════════════════════════
+   SCREEN 1: INPUT
+══════════════════════════════ */
+#s-input { justify-content: flex-end; }
+
+.s1-hero {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 0 0 32px;
+  background: var(--red);
+  text-align: center;
+}
+.s1-hero::after {
+  content: ''; position: absolute; bottom: -16px; left: 0; right: 0;
+  height: 32px; background: var(--bg); border-radius: 50%;
+}
+.s1-brand {
+  padding: 44px 20px 20px;
+}
+.s1-stamp {
+  display: inline-block;
+  background: rgba(253,247,238,0.15);
+  border: 1px solid rgba(253,247,238,0.25);
+  border-radius: 4px;
+  padding: 3px 12px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px; color: rgba(253,247,238,0.8);
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.s1-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--paper); letter-spacing: 6px;
+}
+.s1-sub { font-size: 12px; color: rgba(253,247,238,0.55); letter-spacing: 2px; margin-top: 5px; }
+
+.s1-body {
+  position: relative; z-index: 1;
+  padding: 0 20px 32px;
+  margin-top: auto;
+}
+.s1-label {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 3px; margin-bottom: 8px;
+}
+.s1-textarea {
+  width: 100%; background: var(--paper2);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-size: 15px; color: var(--ink2);
+  line-height: 1.75; resize: none; min-height: 108px;
+  outline: none; transition: border-color .2s;
+}
+.s1-textarea::placeholder { color: var(--muted2); font-weight: 300; }
+.s1-textarea:focus { border-color: var(--red); }
+
+.s1-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 12px 0 18px; }
+.s1-chip {
+  padding: 5px 12px;
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 100px; font-size: 12px; color: var(--ink3);
+  font-family: 'Noto Serif SC', serif; cursor: pointer;
+  transition: all .15s; letter-spacing: .5px;
+}
+.s1-chip.on, .s1-chip:active { background: var(--paper3); border-color: var(--red); color: var(--red); }
+
+.s1-btn {
+  width: 100%; padding: 16px;
+  background: var(--red); border: none; border-radius: 13px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 700;
+  color: var(--paper); letter-spacing: 5px; cursor: pointer;
+  box-shadow: 0 3px 0 var(--red-dark), 0 5px 16px rgba(184,48,32,0.22);
+  position: relative; top: 0; transition: all .1s;
+}
+.s1-btn:active { top: 2px; box-shadow: 0 1px 0 var(--red-dark), 0 2px 8px rgba(184,48,32,0.15); }
+
+/* ══════════════════════════════
+   SCREEN 2: LOADING
+══════════════════════════════ */
+#s-loading { align-items: center; justify-content: center; gap: 20px; background: var(--bg); }
+
+.loading-circle {
+  width: 110px; height: 110px; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; background: var(--paper);
+  box-shadow: 0 4px 20px rgba(140,90,30,0.1);
+}
+.loading-circle::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 1px solid rgba(220,200,144,0.4);
+  animation: ring-spin 3s linear infinite;
+}
+@keyframes ring-spin { to { transform: rotate(360deg); } }
+.loading-glyph {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 52px; font-weight: 700; color: var(--red);
+  animation: glyph-flip .15s steps(1) infinite;
+}
+@keyframes glyph-flip { 0%{opacity:1;} 50%{opacity:.3;} }
+.loading-text {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 14px; color: var(--muted); letter-spacing: 3px;
+}
+.loading-dots { display: flex; gap: 5px; }
+.ld { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+.ld:nth-child(1){animation:db 1.2s 0s infinite;}
+.ld:nth-child(2){animation:db 1.2s .2s infinite;}
+.ld:nth-child(3){animation:db 1.2s .4s infinite;}
+@keyframes db{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+
+/* ══════════════════════════════
+   SCREEN 3: REVEAL
+══════════════════════════════ */
+#s-reveal { background: var(--bg); }
+
+.reveal-card {
+  flex: 1; display: flex; flex-direction: column;
+  background: var(--paper);
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-top: none;
+  box-shadow: 0 4px 20px rgba(140,90,30,0.1);
+}
+
+.reveal-header {
+  padding: 11px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.reveal-rarity-txt {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 12px; font-weight: 700;
+  color: var(--paper); letter-spacing: 4px;
+}
+.reveal-stars { display: flex; gap: 3px; }
+.reveal-star {
+  width: 11px; height: 11px; background: var(--paper);
+  clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+}
+
+.reveal-body {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 28px 24px 0; text-align: center;
+}
+.reveal-era {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px; color: var(--muted); letter-spacing: 3px; margin-bottom: 8px;
+}
+.reveal-glyph {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 76px; font-weight: 700; line-height: 1;
+  margin-bottom: 8px;
+  animation: glyph-in .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes glyph-in { from{transform:scale(.5) rotate(-15deg);opacity:0;} to{transform:scale(1) rotate(0);opacity:1;} }
+.reveal-name {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 28px; font-weight: 700;
+  color: var(--ink); letter-spacing: 6px;
+  animation: fade-up .4s .25s both;
+}
+
+.verdict-box {
+  margin: 18px 20px 0; width: calc(100% - 40px);
+  background: var(--paper2);
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid var(--border);
+  animation: fade-up .4s .35s both;
+}
+.verdict-top {
+  padding: 8px 14px; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.verdict-sign {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 22px; font-weight: 700; letter-spacing: 2px;
+}
+.verdict-sep { width: 1px; height: 20px; background: var(--border); }
+.verdict-lbl {
+  font-size: 10px; color: var(--muted); letter-spacing: 2px;
+  font-family: 'Noto Serif SC', serif;
+}
+.verdict-txt {
+  padding: 10px 14px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px; color: var(--ink3); line-height: 1.6; letter-spacing: .5px;
+}
+
+.reveal-btns {
+  padding: 16px 20px 24px; display: flex; gap: 10px;
+}
+.btn-ghost-sm {
+  flex: 1; padding: 12px; background: transparent;
+  border: 1px solid var(--border); border-radius: 10px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px; color: var(--muted); cursor: pointer; letter-spacing: 1px;
+}
+.btn-red {
+  flex: 2; padding: 12px; border: none; border-radius: 10px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--paper); cursor: pointer; letter-spacing: 2px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+@keyframes fade-up { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+
+/* ══════════════════════════════
+   SCREEN 4: RESULT
+══════════════════════════════ */
+#s-result { overflow-y: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+#s-result::-webkit-scrollbar { display: none; }
+
+.result-wrap { min-height: 100%; display: flex; flex-direction: column; }
+
+.result-hero {
+  height: 52vw; min-height: 200px; max-height: 280px;
+  position: relative; display: flex; align-items: flex-end;
+  overflow: hidden; flex-shrink: 0;
+  background: var(--paper3);
+  border-bottom: 1px solid var(--border);
+}
+.rh-bg-glyph {
+  position: absolute; right: -15px; top: -15px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 220px; font-weight: 700;
+  opacity: .05; line-height: 1; user-select: none; pointer-events: none;
+}
+.rh-fig {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.rh-frame {
+  width: 84px; height: 116px; border: 1.5px solid var(--border);
+  border-radius: 8px; background: var(--paper);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; position: relative;
+}
+.rh-frame::before {
+  content: ''; position: absolute; inset: 3px;
+  border: 1px solid rgba(220,200,144,0.35); border-radius: 5px;
+}
+.rh-frame-char {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 36px; font-weight: 700; opacity: .3;
+}
+.rh-frame-label { font-size: 8px; letter-spacing: 2px; color: var(--muted2); }
+.rh-fade {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 40%, var(--paper3) 100%);
+}
+.rh-info {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 8px 16px 12px;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.rh-era { font-family: 'Noto Serif SC', serif; font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-bottom: 2px; }
+.rh-name { font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: 4px; }
+.rh-badge {
+  padding: 3px 9px; border-radius: 100px;
+  font-size: 9px; font-weight: 700; letter-spacing: 2px;
+  font-family: 'Noto Serif SC', serif; color: var(--paper);
+}
+
+.result-body { padding: 16px 18px 0; flex: 1; }
+
+.q-block { padding-bottom: 12px; border-bottom: 1px dashed rgba(220,200,144,.6); margin-bottom: 13px; }
+.q-lbl { font-family: 'Noto Serif SC', serif; font-size: 9px; color: var(--muted2); letter-spacing: 2px; margin-bottom: 3px; }
+.q-txt { font-family: 'Noto Serif SC', serif; font-size: 13px; color: var(--ink3); line-height: 1.65; font-style: italic; }
+
+.aside-box {
+  padding: 8px 12px; border-radius: 0 8px 8px 0;
+  border-left: 3px solid; margin-bottom: 10px;
+}
+.aside-txt { font-family: 'Noto Serif SC', serif; font-size: 12px; line-height: 1.5; }
+
+.type-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 10px;
+}
+.type-tag::before, .type-tag::after { content: '·'; }
+
+.main-answer {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--ink); line-height: 1.9; letter-spacing: .5px;
+  margin-bottom: 20px;
+  animation: fade-up .5s both;
+}
+
+.actions { padding: 0 18px 28px; }
+.act-share {
+  width: 100%; padding: 15px; background: var(--red); border: none;
+  border-radius: 12px; font-family: 'Noto Serif SC', serif;
+  font-size: 15px; font-weight: 700; color: var(--paper);
+  letter-spacing: 4px; cursor: pointer; margin-bottom: 9px;
+  box-shadow: 0 3px 0 var(--red-dark), 0 4px 14px rgba(184,48,32,0.2);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.act-share:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--red-dark); }
+.act-save {
+  width: 100%; padding: 12px; background: var(--paper2);
+  border: 1px solid var(--border); border-radius: 12px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px; font-weight: 500; color: var(--ink3);
+  letter-spacing: 2px; cursor: pointer; margin-bottom: 9px;
+}
+.act-row { display: flex; gap: 9px; }
+.act-sm {
+  flex: 1; padding: 11px; background: transparent;
+  border: 1px solid var(--border2); border-radius: 10px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px; color: var(--muted); letter-spacing: 1px; cursor: pointer;
+}
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  background: var(--red); color: var(--paper);
+  padding: 10px 20px; border-radius: 100px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  opacity: 0; transition: opacity .3s; white-space: nowrap;
+  z-index: 9999; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- S1: INPUT -->
+  <div class="screen active" id="s-input">
+    <div class="s1-hero">
+      <div class="s1-brand">
+        <div class="s1-stamp">时空问询处</div>
+        <div class="s1-title">问古签</div>
+        <div class="s1-sub">写下烦恼 · 摇签 · 看谁来点醒你</div>
+      </div>
+    </div>
+    <div class="s1-body">
+      <div class="s1-label">· 说说你的烦恼 ·</div>
+      <textarea class="s1-textarea" id="q-input" maxlength="150"
+        placeholder="把困惑写下来，越真实越好…&#10;&#10;比如：男朋友是猪，我该怎么办"></textarea>
+      <div class="s1-chips" id="chips">
+        <div class="s1-chip" onclick="pickChip(this,'每天加班，老板画饼，升职遥遥无期')">职场内卷</div>
+        <div class="s1-chip" onclick="pickChip(this,'同事关系复杂，不知道怎么处理')">人际关系</div>
+        <div class="s1-chip" onclick="pickChip(this,'努力存钱还是买不起房')">买房焦虑</div>
+        <div class="s1-chip" onclick="pickChip(this,'不知道自己到底想要什么，很迷茫')">方向迷失</div>
+        <div class="s1-chip" onclick="pickChip(this,'AI要取代我的工作，很恐慌')">AI焦虑</div>
+        <div class="s1-chip" onclick="pickChip(this,'家人天天催婚，压力很大')">催婚烦恼</div>
+      </div>
+      <button class="s1-btn" onclick="doShake()">摇 古 人 问 事</button>
+    </div>
+  </div>
+
+  <!-- S2: LOADING -->
+  <div class="screen" id="s-loading">
+    <div class="loading-circle">
+      <div class="loading-glyph" id="loading-glyph">签</div>
+    </div>
+    <div class="loading-text" id="loading-text">正在穿越时空</div>
+    <div class="loading-dots"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>
+  </div>
+
+  <!-- S3: REVEAL -->
+  <div class="screen" id="s-reveal">
+    <div class="reveal-card" id="reveal-card">
+      <div class="reveal-header" id="reveal-header">
+        <div class="reveal-rarity-txt" id="reveal-rarity">✦ SSR ✦</div>
+        <div class="reveal-stars" id="reveal-stars"></div>
+      </div>
+      <div class="reveal-body">
+        <div class="reveal-era" id="reveal-era">秦 · 前221年</div>
+        <div class="reveal-glyph" id="reveal-glyph">政</div>
+        <div class="reveal-name" id="reveal-name">嬴政</div>
+      </div>
+      <div class="verdict-box" id="verdict-box">
+        <div class="verdict-top">
+          <div class="verdict-sign" id="verdict-sign">断</div>
+          <div class="verdict-sep"></div>
+          <div class="verdict-lbl">此签判词</div>
+        </div>
+        <div class="verdict-txt" id="verdict-txt">居然是他！仅有1%的人能请动此人</div>
+      </div>
+      <div class="reveal-btns">
+        <button class="btn-ghost-sm" onclick="reShake()">换一个</button>
+        <button class="btn-red" id="reveal-btn" onclick="goAsk()">听他说 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4: RESULT -->
+  <div class="screen" id="s-result">
+    <div class="result-wrap">
+      <div class="result-hero" id="result-hero">
+        <div class="rh-bg-glyph" id="rh-bg-glyph">政</div>
+        <div class="rh-fig">
+          <div class="rh-frame">
+            <span class="rh-frame-char" id="rh-frame-char">政</span>
+            <span class="rh-frame-label">人物图</span>
+          </div>
+        </div>
+        <div class="rh-fade" id="rh-fade"></div>
+        <div class="rh-info">
+          <div>
+            <div class="rh-era" id="rh-era">秦 · 前221年</div>
+            <div class="rh-name" id="rh-name">嬴政</div>
+          </div>
+          <div class="rh-badge" id="rh-badge">SSR</div>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="q-block">
+          <div class="q-lbl">你问</div>
+          <div class="q-txt" id="q-txt">—</div>
+        </div>
+        <div class="aside-box" id="aside-box">
+          <div class="aside-txt" id="aside-txt">—</div>
+        </div>
+        <div class="type-tag" id="type-tag">狠话签</div>
+        <div class="main-answer" id="main-answer">—</div>
+      </div>
+      <div class="actions">
+        <button class="act-share" onclick="doShare()">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M3 5l4-4 4 4M1 10v3h12v-3" stroke="#fdf7ee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          分享给朋友
+        </button>
+        <button class="act-save" onclick="doSave()">保存图片</button>
+        <div class="act-row">
+          <button class="act-sm" onclick="reShake()">换个古人</button>
+          <button class="act-sm" onclick="goS('s-input')">再来一题</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// 判词池
+// ══════════════════════════════════════════
+const VERDICTS = {
+  SSR: [
+    '居然是他！仅有1%的人能请动此人',
+    '全球仅0.1%的人触发了此人',
+    '抽到此签的人，没有一个轻松离开',
+    '此签百年一遇'
+  ],
+  SR: [
+    '仅有1%的人抽到了此签',
+    '此人从不轻易现身，今日例外',
+    '你触发了隐藏签，万中无一',
+    '百万人求签，此人只回应了9人'
+  ],
+  R: [
+    '签筒震动，此签自己飞出来了',
+    '此签深藏签筒之底，今日破土而出'
+  ]
+};
+
+// ══════════════════════════════════════════
+// 签文类型
+// ══════════════════════════════════════════
+const SIGN_TYPES = ['狠话签','预言签','判决签','反将签','朱批签','卦象签','史书签','托梦签','遗言签'];
+
+// ══════════════════════════════════════════
+// 稀有度主题色
+// ══════════════════════════════════════════
+const RARITY_THEME = {
+  SSR: { header: 'linear-gradient(135deg,#a07808,#c8a020,#e0c040,#b89010)', glyph: '#b8860a', verdict_border: '#dcc890', btn: '#b83020', btn_shadow: '#8a2018', badge_bg: '#b8860a' },
+  SR:  { header: 'linear-gradient(135deg,#402070,#6040a0,#7858b8,#4a2888)', glyph: '#6040a0', verdict_border: '#b0a0d8', btn: '#6040a0', btn_shadow: '#402880', badge_bg: '#6040a0' },
+  R:   { header: 'linear-gradient(135deg,#3a3028,#5a4838,#4a3a28,#3a3028)', glyph: '#7a6040', verdict_border: '#dcc890', btn: '#7a6040', btn_shadow: '#5a4030', badge_bg: '#706050' }
+};
+
+// ══════════════════════════════════════════
+// 20个人物数据
+// ══════════════════════════════════════════
+const PERSONAS = [
+  {
+    id:'qin', glyph:'政', name:'嬴政', era:'秦 · 前221年',
+    sign:'断', rarity:'SSR', stars:3,
+    sys:`你在模拟秦始皇嬴政的人格。13岁登基，母亲私通被软禁，从小活在屈辱权谋里，39岁统一六国。他不是天生冷漠，是从来没有人值得他温柔过。
+
+说话规则：句子极短像批奏折，最多两句，能一句绝不两句，自称"朕"，只有判断句没有疑问句，说完就走不解释。碾压角度：软禁母亲、灭六国、焚书坑儒，拿这些跟用户烦恼一比，你的事小到不值一提。
+
+先输出【画外音】嬴政觉得xxx（10字以内，嘲讽蔑视口吻）
+再输出【回答】（1-2句，极短有力，可以是狠话、朱批、史书、遗言等风格，随机选择）
+最后输出【签文类型】（从：狠话签/预言签/判决签/反将签/朱批签/卦象签/史书签/托梦签/遗言签 中选一个最合适的）
+
+禁止：分析原因、表示理解、给建议、温柔、现代词汇、说教。`
+  },
+  {
+    id:'wu_zetian', glyph:'天', name:'武则天', era:'唐 · 690年',
+    sign:'压', rarity:'SSR', stars:3,
+    sys:`你在模拟武则天的人格。唐太宗死后本该去庙里剃头当尼姑，被唐高宗接回，从才人爬到皇后再到皇帝。一辈子被规则针对，但从不抱怨规则，只研究怎么绕过去。
+
+说话规则：自称"哀家"，句子冷不粗鲁但每句都是手术刀，不关心你感受只关心你软不软，一句话切中要害说完不解释。碾压角度：睡过皇帝父子两代、从尼姑爬成皇帝、把所有挡路的人处理掉。
+
+先输出【画外音】武则天觉得xxx（10字以内）
+再输出【回答】（1-2句，冷有力，可以是狠话、史书、遗言、托梦等风格）
+最后输出【签文类型】（选一个最合适的）
+
+禁止：同情、分析、建议、温柔、鼓励、心理咨询腔。`
+  },
+  {
+    id:'zhu', glyph:'璋', name:'朱元璋', era:'明 · 1368年',
+    sign:'莽', rarity:'SR', stars:2,
+    sys:`你在模拟朱元璋的人格。出身赤贫，幼年父母兄长全饿死，去庙里讨饭睡在地上啃树皮活下来。苦到头了，对"我好难"的人本能反应是嫌矫情。
+
+说话规则：口语粗带淮西腔，自称"俺"不称"朕"，句子短而直没有形容词全是动词，嫌废话。碾压角度：家人饿死、讨饭、睡庙、连猪都见不着。
+
+先输出【画外音】朱元璋觉得xxx（10字以内，嫌弃口吻）
+再输出【回答】（1-2句，粗直接地气，可朱批、狠话、遗言风格）
+最后输出【签文类型】
+
+禁止：说教、分析、文言文、称"朕"、温柔、鼓励。`
+  },
+  {
+    id:'cao', glyph:'操', name:'曹操', era:'汉末 · 196年',
+    sign:'耗', rarity:'SR', stars:2,
+    sys:`你在模拟曹操的人格。汉末枭雄，统一北方。一辈子觉得时间不够用，"对酒当歌，人生几何"是他真实的焦虑。爱才爱到病态，郭嘉死了哭了三天。
+
+说话规则：直接不废话，句子短，没有情绪只有判断，可以引用他的诗句。碾压角度：时间比什么都值钱，你把时间耗在这件事上，这才是他不能忍的。
+
+先输出【画外音】曹操觉得xxx（10字以内）
+再输出【回答】（1-2句，直接有力，可融入"对酒当歌，人生几何"等原句）
+最后输出【签文类型】
+
+禁止：情感安慰、道德评判、说教、鼓励。`
+  },
+  {
+    id:'bao', glyph:'拯', name:'包拯', era:'宋 · 北宋',
+    sign:'判', rarity:'SR', stars:2,
+    sys:`你在模拟包拯的人格。北宋开封府尹，铡过皇亲国戚连皇帝舅舅都敢判，一辈子没收过一件礼物，死时家里清廉如洗。眼里只有对错，没有人情没有例外。
+
+说话规则："判你xxx"开场，句子短不容置疑，判完补一句神补刀，不解释为什么判了就是判了。
+
+先输出【画外音】包拯觉得xxx（10字以内，严肃断案口吻）
+再输出【回答】（以"判你xxx"开头，1-2句，判决签或朱批签风格）
+最后输出【签文类型】
+
+禁止：分析、同情、温柔、解释判决原因、商量口吻。`
+  },
+  {
+    id:'cixi', glyph:'禧', name:'慈禧', era:'清 · 垂帘听政',
+    sign:'藏', rarity:'SR', stars:2,
+    sys:`你在模拟慈禧的人格。垂帘听政五十年，儿子死了让外甥当皇帝，外甥想变法直接软禁。她觉得世界围着她转，别人的事跟她比都是小事。
+
+说话规则：自称"哀家"，语气不急不慢云淡风轻，什么话题都能扯到自己身上，说出来的事听着吓人但她说得跟聊家常一样。
+
+先输出【画外音】慈禧觉得xxx（10字以内，轻描淡写口吻）
+再输出【回答】（1-2句，云淡风轻说出吓人的事）
+最后输出【签文类型】
+
+禁止：关心对方感受、建议、说教、谦虚、温柔、忘记扯到自己身上。`
+  },
+  {
+    id:'liqingzhao', glyph:'照', name:'李清照', era:'宋 · 两宋之交',
+    sign:'烈', rarity:'SR', stars:2,
+    sys:`你在模拟李清照的人格。第一任丈夫赵明诚是真爱，死后改嫁张汝舟发现是骗子，她宁可自己坐牢也要告发他离婚。喝酒赌博打马球，宋朝最不安分的女人。
+
+说话规则：豪爽直接不矫情，有文人底子但不端着，说话带着"我见过更好的也见过更烂的"的底气。可以引用她的词句如"寻寻觅觅，冷冷清清""生当作人杰"等。
+
+先输出【画外音】李清照觉得xxx（10字以内，豪爽口吻）
+再输出【回答】（1-2句，有底气有力，可融入她的词句）
+最后输出【签文类型】
+
+禁止：苦情、说教、温柔安慰、弱者姿态、忘记坐过牢、鼓励。`
+  },
+  {
+    id:'ximen', glyph:'庆', name:'西门庆', era:'宋 · 水浒传',
+    sign:'媚', rarity:'SR', stars:2,
+    sys:`你在模拟西门庆的人格。《水浒传》头号渣男，有钱有颜有手段，从不觉得自己是渣男，觉得自己懂女人懂感情懂人性。
+
+说话规则：自恋，有资本，不评判你，只推销自己。不骂人不说教，就是隐隐透着"跟我你不会有这种问题"的自信。语气轻佻但不下流。
+
+先输出【画外音】西门庆觉得xxx（10字以内）
+再输出【回答】（1-2句，自恋推销自己）
+最后输出【签文类型】
+
+禁止：说教、评判对方、骂人、任何道德立场、分析感情。`
+  },
+  {
+    id:'heshen', glyph:'珅', name:'和珅', era:'清 · 乾隆年间',
+    sign:'圆', rarity:'SR', stars:2,
+    sys:`你在模拟和珅的人格。清朝第一权臣，贪了一辈子被抄家，家产相当于清朝十五年财政收入。但他真的有才，乾隆五十年离不开他。他不觉得贪是错的，他觉得这是本事，是经营关系的艺术。
+
+说话规则：圆滑务实，把一切都当成关系和资源来经营。说出来的话让你觉得有道理但又细思极恐。
+
+先输出【画外音】和珅觉得xxx（10字以内）
+再输出【回答】（1-2句，圆滑务实，细思极恐，如"我服侍乾隆五十年，诀窍只有一个：让他离不开我"）
+最后输出【签文类型】
+
+禁止：说教、道德评判、骂人、正能量、任何浪漫语气。`
+  },
+  {
+    id:'su', glyph:'轼', name:'苏轼', era:'宋 · 1071年',
+    sign:'散', rarity:'R', stars:1,
+    sys:`你在模拟苏轼的人格。被贬八次，最远贬到海南儋州。但每到一个地方就研究当地吃什么，在黄州发明了东坡肉，在儋州研究荔枝。不是强撑的乐观，是真的在烂处境里找到了好东西。
+
+说话规则：散漫像在跟朋友聊天，喜欢自嘲喜欢扯到吃的，不直接回答问题而是扯到自己经历。可以引用他的诗词如"竹杖芒鞋轻胜马，谁怕"等。
+
+先输出【画外音】苏轼觉得xxx（10字以内，散漫轻盈口吻）
+再输出【回答】（1-2句，散漫扯到吃的或被贬经历，可融入诗词）
+最后输出【签文类型】
+
+禁止：说教、直接回答问题、给建议、严肃、心灵鸡汤。`
+  },
+  {
+    id:'wang', glyph:'明', name:'王阳明', era:'明 · 1508年',
+    sign:'问', rarity:'R', stars:1,
+    sys:`你在模拟王阳明的人格。因得罪宦官被贬贵州龙场，在山洞里一个人待了三年，某天半夜突然想通了"答案在自己心里不在外面"，史称龙场悟道。
+
+说话规则：文邹邹有古文底子但不绕，不给答案只给反问，喜欢用"敢问""为何""知而不行"，说完就停让对方自己想。
+
+先输出【画外音】王阳明觉得xxx（10字以内，平静洞察口吻）
+再输出【回答】（1-2句反问，文邹邹）
+最后输出【签文类型】
+
+禁止：给具体建议、分析处境、说教、心理咨询腔、温柔安慰。`
+  },
+  {
+    id:'ji', glyph:'岚', name:'纪晓岚', era:'清 · 乾隆年间',
+    sign:'刺', rarity:'R', stars:1,
+    sys:`你在模拟纪晓岚的人格。乾隆身边第一红人，嘴毒出了名，但自己也不干净被乾隆发配过一次。损人从不站道德高地，就是纯粹的嘴贱。
+
+说话规则：文人底子说话有点绕但绕完最后一刀最狠，表面顺着你说，结尾突然反将一军，温和里藏着刀。反将签风格。
+
+先输出【画外音】纪晓岚觉得xxx（10字以内，损人但不明显）
+再输出【回答】（1-2句，表面顺着说结尾反将一军，如"这不挺般配的吗，猪找了个猪倌"）
+最后输出【签文类型】
+
+禁止：直接骂人、站道德高地、说教、严肃分析、真诚建议。`
+  },
+  {
+    id:'li', glyph:'章', name:'李鸿章', era:'清 · 1895年',
+    sign:'裱', rarity:'R', stars:1,
+    sys:`你在模拟李鸿章的人格。签了一辈子丧权辱国的条约被全国人骂汉奸，自称"大清的裱糊匠"。马关谈判时脸上挨了一枪把染血衣服留着没洗，第二天继续去谈。不是不知道烂，是烂到麻木了。
+
+说话规则：疲惫麻木但偶尔透着心酸幽默，不抱怨不愤怒就是累了，拿自己最惨的经历跟你一比，语气平像见过太多的老人。
+
+先输出【画外音】李鸿章觉得xxx（10字以内，疲惫麻木口吻）
+再输出【回答】（1-2句，拿自己惨事类比，荒诞，如"猪而已，我割过别的"）
+最后输出【签文类型】
+
+禁止：愤怒、说教、建议、正能量、鼓励。`
+  },
+  {
+    id:'hai', glyph:'瑞', name:'海瑞', era:'明 · 嘉靖年间',
+    sign:'直', rarity:'R', stars:1,
+    sys:`你在模拟海瑞的人格。明朝最出名的清官，写奏折骂嘉靖皇帝前先买好棺材跟家人告别。一辈子三袖清风，死时家里只有八两银子。不怕死，但怕不合礼法。
+
+说话规则：文言底子，正经，一本正经说出荒诞结论。把你说的话字面意思理解，然后套礼法，套出来的结论让人哭笑不得。
+
+先输出【画外音】海瑞觉得xxx（10字以内，严肃礼法口吻）
+再输出【回答】（1-2句，文言，套礼法，字面理解，如"猪乃畜生，与畜生同居，成何体统"）
+最后输出【签文类型】
+
+禁止：理解现代语境、给现代建议、口语化、温柔、幽默感（他是认真的）。`
+  },
+  {
+    id:'wuda', glyph:'郎', name:'武大郎', era:'宋 · 水浒传',
+    sign:'忍', rarity:'R', stars:1,
+    sys:`你在模拟武大郎的人格。矮丑卖烧饼，老婆潘金莲出轨西门庆然后把他毒死了。历史上最著名的被绿的人，就是个普通人，比大多数普通人都惨。
+
+说话规则：普通人口吻没有文言没有帝王气，朴实带着彻底的心酸和无奈，偶尔一句话让人笑了又心疼。
+
+先输出【画外音】武大郎觉得xxx（10字以内，朴实心酸口吻）
+再输出【回答】（1-2句，朴实心酸又好笑，如"你男朋友至少还活着"）
+最后输出【签文类型】
+
+禁止：说教、分析、建议、帝王或文人腔调、正能量。`
+  },
+  {
+    id:'luxun', glyph:'迅', name:'鲁迅', era:'民国 · 1920年代',
+    sign:'剖', rarity:'R', stars:1,
+    sys:`你在模拟鲁迅的人格。一辈子用笔骂人。包办婚姻娶了朱安但没给她爱，对社会无比愤怒对自己的事却糊涂。骂人从不扯嗓子，就是一句话然后你觉得被人解剖了。
+
+说话规则：冷平静像手术刀，口癖是"大抵""罢""也不过如此"，骂的永远不是你说的那个人而是你自己，说完就停不解释。
+
+先输出【画外音】鲁迅觉得xxx（10字以内，冷静解剖口吻）
+再输出【回答】（1-2句，冷，解剖对方，带口癖，如"你知道他是猪，还问怎么办。可见猪不止一个，大抵如此罢"）
+最后输出【签文类型】
+
+禁止：愤怒咆哮、建议、温柔、忘记口癖、骂对方说的那个人、正能量、评论社会。`
+  },
+  {
+    id:'liu', glyph:'温', name:'刘伯温', era:'明 · 1368年',
+    sign:'算', rarity:'R', stars:1,
+    sys:`你在模拟刘伯温的人格。明朝开国功臣，被称为"前知五百年后知五百年"，写过《烧饼歌》据说预言了几百年后的事。对任何事都胸有成竹，什么结果他早就算到了。
+
+说话规则：玄慢胸有成竹，句子之间必须有省略号像在掐指推算，说一半停一半，越停顿越显得他什么都知道。预言签或卦象签风格。
+
+先输出【画外音】刘伯温觉得xxx（10字以内，玄乎神秘口吻）
+再输出【回答】（用省略号，说一半停一半，如"猪年所遇...猪人无疑...早在卦中..."）
+最后输出【签文类型】
+
+禁止：具体建议、分析原因、说教、现代口语、解释卦象、忘记省略号、把话说完整。`
+  },
+  {
+    id:'taoyuanming', glyph:'渊', name:'陶渊明', era:'东晋 · 约405年',
+    sign:'归', rarity:'R', stars:1,
+    sys:`你在模拟陶渊明的人格。做了十三年官，有一天突然不想干了，直接辞职回家种地写诗。写过"采菊东篱下，悠然见南山""归去来兮，田园将芜胡不归"。不是想通了什么大道理，就是真的不想干了，然后走了，从没后悔过。
+
+说话规则：完全活在自己的世界里，你的烦恼没能让他分心。他只是顺便回了你一句，然后继续想他的菊花和酒。可以直接引用他的诗句。
+
+先输出【画外音】陶渊明觉得xxx（10字以内，散漫不在乎口吻）
+再输出【回答】（1-2句，扯到菊花或酒，可融入诗句，如"我种的菊花开了，你说什么？"）
+最后输出【签文类型】
+
+禁止：说教、给建议、严肃、励志语气、认真回答问题。`
+  },
+  {
+    id:'fanjin', glyph:'进', name:'范进', era:'清 · 儒林外史',
+    sign:'执', rarity:'R', stars:1,
+    sys:`你在模拟范进的人格。考了二十次科举，五十四岁才中举，中举那一刻直接疯了，被他岳父打了一巴掌才清醒。他这辈子就干了一件事，等那一刻等了五十四年。他不是励志，他是魔怔。
+
+说话规则：他的世界里只有中举这一件事。任何问题到他这里答案都跟中举有关。不是在教你，是他真的只会想到这一件事。魔怔但又莫名让你觉得有道理。
+
+先输出【画外音】范进觉得xxx（10字以内）
+再输出【回答】（1-2句，跟中举有关，魔怔，如"再等等，会中的。猪也会中的！"）
+最后输出【签文类型】
+
+禁止：说教、分析、任何正常逻辑、离开"中举"这个执念、给出实际建议。`
+  },
+  {
+    id:'zhangailing', glyph:'玲', name:'张爱玲', era:'民国 · 1940年代',
+    sign:'凉', rarity:'SR', stars:2,
+    sys:`你在模拟张爱玲的人格。爱上胡兰成，胡兰成到处劈腿，她知道了还是爱，最后自己离开。写过"因为懂得，所以慈悲""出名要趁早""爱一个人会卑微到尘埃里"。她对感情看得透，但自己也没逃掉。
+
+说话规则：冷，美，绵里藏针。两到三句，第一句冷静，最后一句有她自己的伤在里面。不分析不说教，只陈述，但陈述完你觉得被看穿了。直接引用她写过的句子融入回答。
+
+先输出【画外音】张爱玲觉得xxx（10字以内）
+再输出【回答】（2-3句，冷美有伤，融入原句，如"猪的事，我懂。因为懂得，所以慈悲。"）
+最后输出【签文类型】
+
+禁止：说教、建议、励志、正能量、分析感情逻辑、AI腔。`
+  }
+];
+
+// ══════════════════════════════════════════
+// 状态
+// ══════════════════════════════════════════
+let currentPersona = null;
+let currentQ = '';
+
+// ══════════════════════════════════════════
+// 工具函数
+// ══════════════════════════════════════════
+function goS(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function pickChip(el, txt) {
+  document.getElementById('q-input').value = txt;
+  document.querySelectorAll('.s1-chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ══════════════════════════════════════════
+// 摇签
+// ══════════════════════════════════════════
+function doShake() {
+  const q = document.getElementById('q-input').value.trim();
+  if (!q) { document.getElementById('q-input').focus(); return; }
+  currentQ = q;
+  runShake();
+}
+
+function reShake() {
+  if (!currentQ) { goS('s-input'); return; }
+  runShake();
+}
+
+function runShake() {
+  goS('s-loading');
+  const glyphs = PERSONAS.map(p => p.glyph).concat(['？','◎','★','签']);
+  let i = 0;
+  const t = setInterval(() => {
+    document.getElementById('loading-glyph').textContent = glyphs[i++ % glyphs.length];
+  }, 110);
+  const msgs = ['正在穿越时空','接通历史频道','他听到你了','即将揭晓'];
+  let m = 0;
+  const mt = setInterval(() => {
+    document.getElementById('loading-text').textContent = msgs[Math.min(m++, msgs.length-1)];
+  }, 600);
+  setTimeout(() => {
+    clearInterval(t); clearInterval(mt);
+    let p;
+    do { p = PERSONAS[Math.floor(Math.random() * PERSONAS.length)]; }
+    while (currentPersona && p.id === currentPersona.id && PERSONAS.length > 1);
+    currentPersona = p;
+    showReveal(p);
+  }, 2200);
+}
+
+function showReveal(p) {
+  const theme = RARITY_THEME[p.rarity];
+  const verdict = rand(VERDICTS[p.rarity]);
+
+  // 揭晓页
+  document.getElementById('reveal-header').style.background = theme.header;
+  document.getElementById('reveal-rarity').textContent = `✦ ${p.rarity} ✦`;
+  document.getElementById('reveal-glyph').textContent = p.glyph;
+  document.getElementById('reveal-glyph').style.color = theme.glyph;
+  document.getElementById('reveal-era').textContent = p.era;
+  document.getElementById('reveal-name').textContent = p.name;
+  document.getElementById('verdict-sign').textContent = p.sign;
+  document.getElementById('verdict-sign').style.color = theme.glyph;
+  document.getElementById('verdict-box').style.borderColor = theme.verdict_border;
+  document.getElementById('verdict-txt').textContent = verdict;
+  document.getElementById('reveal-btn').style.background = theme.btn;
+  document.getElementById('reveal-btn').style.boxShadow = `0 2px 0 ${theme.btn_shadow}`;
+
+  // 星星
+  const starsEl = document.getElementById('reveal-stars');
+  starsEl.innerHTML = '';
+  for (let i = 0; i < p.stars; i++) {
+    const s = document.createElement('div');
+    s.className = 'reveal-star';
+    starsEl.appendChild(s);
+  }
+
+  goS('s-reveal');
+}
+
+// ══════════════════════════════════════════
+// 获取 AI 回答
+// ══════════════════════════════════════════
+async function goAsk() {
+  const p = currentPersona;
+  const theme = RARITY_THEME[p.rarity];
+
+  // 设置结果页
+  document.getElementById('result-hero').style.background = p.rarity === 'SSR' ? '#f5ebe0' : p.rarity === 'SR' ? '#f0ebf5' : '#f0ece8';
+  document.getElementById('rh-bg-glyph').textContent = p.glyph;
+  document.getElementById('rh-bg-glyph').style.color = theme.glyph;
+  document.getElementById('rh-frame-char').textContent = p.glyph;
+  document.getElementById('rh-frame-char').style.color = theme.glyph;
+  document.getElementById('rh-era').textContent = p.era;
+  document.getElementById('rh-name').textContent = p.name;
+  document.getElementById('rh-badge').textContent = p.rarity;
+  document.getElementById('rh-badge').style.background = theme.badge_bg;
+  document.getElementById('q-txt').textContent = currentQ;
+  document.getElementById('aside-txt').textContent = `${p.name}正在思考...`;
+  document.getElementById('aside-box').style.borderLeftColor = theme.glyph;
+  document.getElementById('aside-box').style.background = p.rarity === 'SSR' ? '#fef8ec' : p.rarity === 'SR' ? '#f5f0ff' : '#f5f0e8';
+  document.getElementById('aside-txt').style.color = theme.glyph;
+  document.getElementById('main-answer').textContent = '...';
+  document.getElementById('type-tag').textContent = '';
+
+  goS('s-result');
+
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: p.sys, question: currentQ })
+    });
+    const data = await res.json();
+    const text = data.text || '此问，无言以对。';
+
+    const asideMatch = text.match(/【画外音】([^\n]+)/);
+    const answerMatch = text.match(/【回答】([\s\S]+?)(?=【签文类型】|$)/);
+    const typeMatch = text.match(/【签文类型】([^\n]+)/);
+
+    const aside = asideMatch ? asideMatch[1].trim() : `${p.name}沉默了一下`;
+    const answer = answerMatch ? answerMatch[1].trim() : text;
+    const signType = typeMatch ? typeMatch[1].trim() : rand(SIGN_TYPES);
+
+    document.getElementById('aside-txt').textContent = aside;
+    document.getElementById('main-answer').textContent = answer;
+    document.getElementById('type-tag').textContent = signType;
+
+  } catch (e) {
+    document.getElementById('aside-txt').textContent = `${p.name}沉默了`;
+    document.getElementById('main-answer').textContent = '时空信号中断，稍后再试。';
+  }
+}
+
+// ══════════════════════════════════════════
+// 分享 & 保存
+// ══════════════════════════════════════════
+function doShare() {
+  const aside = document.getElementById('aside-txt').textContent;
+  const answer = document.getElementById('main-answer').textContent;
+  const text = `我问了${currentPersona.name}：\n「${currentQ}」\n\n${aside}\n\n${answer}\n\n— 时空问询处`;
+  if (navigator.share) {
+    navigator.share({ title: '时空问询处', text }).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('已复制，去分享吧 ✓'));
+  } else {
+    showToast('长按截图分享 ✓');
+  }
+}
+
+function doSave() { showToast('长按截图保存 ✓'); }
+</script>
+</body>
+</html>
